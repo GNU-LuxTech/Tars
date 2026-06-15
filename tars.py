@@ -4,6 +4,7 @@ from google import genai
 from google.genai import types
 from dotenv import load_dotenv
 from colorama import init, Fore, Style
+from voice import VoiceEngine
 
 # Initialize colorama for cross-platform colored terminal output
 init(autoreset=True)
@@ -43,6 +44,7 @@ Current Mission: Assist the user with their queries while maintaining your iconi
 def main():
     print(Fore.CYAN + Style.BRIGHT + "--- TARS System Online ---")
     print(Fore.CYAN + "(Type 'exit' or 'quit' to power down TARS)")
+    print(Fore.CYAN + "(Type 'voice' to toggle voice interaction)")
     
     # Configuration for the model with system instruction
     config = types.GenerateContentConfig(
@@ -56,23 +58,49 @@ def main():
         config=config
     )
 
+    # Initialize Voice Engine
+    voice_engine = VoiceEngine()
+    voice_mode = False
+
     while True:
         try:
-            # User input in GREEN
-            user_input = input(Fore.GREEN + Style.BRIGHT + "\nUser: " + Style.RESET_ALL).strip()
+            if voice_mode:
+                user_input = voice_engine.listen()
+                if not user_input:
+                    print(Fore.YELLOW + "TARS: I didn't catch that. Type 'voice' to exit voice mode or try again.")
+                    # Allow manual override even in voice mode
+                    user_input = input(Fore.GREEN + Style.BRIGHT + "User (text backup): " + Style.RESET_ALL).strip()
+            else:
+                # User input in GREEN
+                user_input = input(Fore.GREEN + Style.BRIGHT + "\nUser: " + Style.RESET_ALL).strip()
             
             if user_input.lower() in ["exit", "quit"]:
-                print(Fore.BLUE + Style.BRIGHT + "\nTARS: Powering down. See you in the next system.")
+                farewell = "Powering down. See you in the next system."
+                print(Fore.BLUE + Style.BRIGHT + f"\nTARS: {farewell}")
+                if voice_mode:
+                    voice_engine.speak(farewell)
                 break
                 
+            if user_input.lower() == "voice":
+                voice_mode = not voice_mode
+                status = "ENABLED" if voice_mode else "DISABLED"
+                msg = f"Voice interaction {status}."
+                print(Fore.CYAN + f"\n--- {msg} ---")
+                voice_engine.speak(msg)
+                continue
+
             if not user_input:
                 continue
 
             # Send message to Gemini using the new chat object
             response = chat.send_message(user_input)
+            tars_text = response.text
             
             # TARS response in BLUE
-            print(Fore.BLUE + Style.BRIGHT + "\nTARS: " + Style.RESET_ALL + Fore.BLUE + response.text)
+            print(Fore.BLUE + Style.BRIGHT + "\nTARS: " + Style.RESET_ALL + Fore.BLUE + tars_text)
+            
+            if voice_mode:
+                voice_engine.speak(tars_text)
             
         except KeyboardInterrupt:
             print(Fore.BLUE + Style.BRIGHT + "\nTARS: Manual override detected. Shutting down.")

@@ -1,3 +1,6 @@
 google-genai
 python-dotenv
 colorama
+pyttsx3
+SpeechRecognition
+pyaudio
