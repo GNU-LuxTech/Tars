@@ -4,3 +4,8 @@ colorama
 pyttsx3
 SpeechRecognition
 pyaudio
+pedalboard
+pydub
+sounddevice
+numpy
+elevenlabs
